@@ -17,6 +17,9 @@ class MainWindow;
 QT_END_NAMESPACE
 
 const int frameExposeTime = 30;  // ms
+const int waitTime = 3 * frameExposeTime;  // ms
+const int defaultPortNumber = 6000;
+const QString defaultIP = "localhost";
 
 class MainWindow : public QMainWindow
 {

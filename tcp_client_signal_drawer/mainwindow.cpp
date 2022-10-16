@@ -65,7 +65,7 @@ void MainWindow::requestAndRedraw()
         return;
 
     drawGraph(points.first, points.second, time);
-    ui->textEdit->setPlainText("Draw successfully");
+    ui->messageBox->setPlainText("Draw successfully");
 }
 
 void MainWindow::drawGraph(const QVector<double> x, const QVector<double> y,
@@ -96,7 +96,7 @@ std::pair<QString, QString> MainWindow::parseTimeAndData(
     const int pos = parser.indexIn(stringToParse);
     if (pos == -1)
     {
-        ui->textEdit->setPlainText(stringToParse + " : can't parse");
+        ui->messageBox->setPlainText(stringToParse + " : can't parse");
         return {{}, {}};
     }
 
@@ -108,16 +108,27 @@ std::pair<QString, QString> MainWindow::parseTimeAndData(
 QString MainWindow::requestData()
 {
     std::unique_ptr<QTcpSocket> mpSocket(new QTcpSocket(this));
-    mpSocket->connectToHost("127.0.0.1", 6000);
-    if (!mpSocket->waitForConnected())
+
+    QString serverAddress = defaultIP;
+    int portNumber = defaultPortNumber;
+
+    QRegExp parser("^(.*)[ ]+(.*)$");
+    const int pos = parser.indexIn(ui->serverData->toPlainText());
+    if (pos == 0)
     {
-        ui->textEdit->setPlainText("Can't connect");
+        serverAddress = parser.capturedTexts()[1];
+        portNumber = parser.capturedTexts()[2].toInt();
+    }
+    mpSocket->connectToHost(serverAddress, portNumber);
+    if (!mpSocket->waitForConnected(waitTime))
+    {
+        ui->messageBox->setPlainText("Can't connect");
         return {};
     }
 
-    if (!mpSocket->waitForReadyRead())
+    if (!mpSocket->waitForReadyRead(waitTime))
     {
-        ui->textEdit->setPlainText("Can't greeting");
+        ui->messageBox->setPlainText("Can't read greeting");
         return {};
     }
     mpSocket->read(100000);
@@ -129,9 +140,9 @@ QString MainWindow::requestData()
     mpSocket->write(
         QString::number(ui->pointsCount->value()).toStdString().c_str());
 
-    if (!mpSocket->waitForReadyRead())
+    if (!mpSocket->waitForReadyRead(waitTime))
     {
-        ui->textEdit->setPlainText("Can't read request result");
+        ui->messageBox->setPlainText("Can't read request result");
         return {};
     }
 
